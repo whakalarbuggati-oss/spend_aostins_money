@@ -28,6 +28,13 @@
             background-color: white;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .net-worth.debt {
+            color: #e74c3c;
+            background-color: #fdf2f2;
+            border: 2px solid #e74c3c;
         }
 
         .items-container {
@@ -76,6 +83,14 @@
             background-color: #2980b9;
         }
 
+        .buy-button.debt-warning {
+            background-color: #e67e22;
+        }
+
+        .buy-button.debt-warning:hover {
+            background-color: #d68910;
+        }
+
         .buy-button:disabled {
             background-color: #95a5a6;
             cursor: not-allowed;
@@ -92,8 +107,8 @@
 <body>
     <h1>💰 Spend Aostin's Money 💰</h1>
     
-    <div class="net-worth">
-        $<span id="netWorth">1000000</span>
+    <div class="net-worth" id="netWorthDisplay">
+        $<span id="netWorth">100000000</span>
     </div>
     
     <div id="message" class="message"></div>
@@ -164,12 +179,22 @@
     </div>
 
     <script>
-        let netWorth = 100000000; // Starting with $1 million
+        let netWorth = 100000000; // Starting with $100 million
 
         function updateDisplay() {
-            document.getElementById('netWorth').textContent = netWorth.toLocaleString();
+            const netWorthElement = document.getElementById('netWorth');
+            const netWorthDisplay = document.getElementById('netWorthDisplay');
             
-            // Disable buttons for items that cost more than current net worth
+            // Display negative amounts properly
+            if (netWorth < 0) {
+                netWorthElement.textContent = `-${Math.abs(netWorth).toLocaleString()}`;
+                netWorthDisplay.classList.add('debt');
+            } else {
+                netWorthElement.textContent = `${netWorth.toLocaleString()}`;
+                netWorthDisplay.classList.remove('debt');
+            }
+            
+            // Update button colors based on whether purchase would result in debt
             const buttons = document.querySelectorAll('.buy-button');
             const items = [
                 {name: 'Pizza', price: 15},
@@ -184,26 +209,40 @@
             ];
             
             buttons.forEach((button, index) => {
-                if (items[index] && netWorth < items[index].price) {
-                    button.disabled = true;
-                } else {
+                if (items[index]) {
+                    const wouldResultInDebt = (netWorth - items[index].price) < 0;
+                    
+                    // Remove all special classes first
+                    button.classList.remove('debt-warning');
                     button.disabled = false;
+                    
+                    // Add debt warning if purchase would result in debt
+                    if (wouldResultInDebt && netWorth >= 0) {
+                        button.classList.add('debt-warning');
+                    }
                 }
             });
         }
 
         function buyItem(itemName, price) {
-            if (netWorth >= price) {
-                netWorth -= price;
-                showMessage(`You bought a ${itemName} for $${price.toLocaleString()}! 🎉`);
-                updateDisplay();
-                
-                // Check if broke
-                if (netWorth === 0) {
-                    showMessage("💸 Aostin is completely broke! You've spent everything! 💸");
-                }
-            } else {
-                showMessage(`Not enough money for ${itemName}! You need $${(price - netWorth).toLocaleString()} more.`);
+            netWorth -= price;
+            showMessage(`You bought ${itemName} for $${price.toLocaleString()}! 🎉`);
+            updateDisplay();
+            
+            // Check if Aostin needs to sell organs (at least $50k in debt)
+            if (netWorth <= -50000) {
+                setTimeout(() => {
+                    showMessage("💀 Aostin is $50k+ in debt! He sold his organs to pay it off... 💀");
+                    setTimeout(() => {
+                        netWorth = 100000000; // Reset to $100 million
+                        showMessage("🏥 Aostin got new organs and is back with $100 million! 🏥");
+                        updateDisplay();
+                    }, 3000);
+                }, 1000);
+            } else if (netWorth === 0) {
+                showMessage("💸 Aostin is completely broke! 💸");
+            } else if (netWorth < 0 && netWorth > -50000) {
+                showMessage(`💳 Aostin is now $${Math.abs(netWorth).toLocaleString()} in debt! 💳`);
             }
         }
 
@@ -222,4 +261,3 @@
     </script>
 </body>
 </html>
-
